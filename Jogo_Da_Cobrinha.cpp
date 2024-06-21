@@ -52,7 +52,7 @@ void atualizaposicao() {
     printf(" ");
     for (int i = pontos; i >= 0; i--) {
         //
-        tamanhocobra[i + 1][0] = tamanhocobra[i][0];
+        tamanhocobra[i + 1][0] = tamanhocobra[i][0];  
         tamanhocobra[i + 1][1] = tamanhocobra[i][1];
     }
 }
@@ -62,9 +62,12 @@ void desenhacomida() {
     srand(time(NULL));
     comida[0] = (rand() % 28) + 46;
     comida[1] = (rand() % 8) + 8;
-
+	//Caso seja gerada logo na cabeça da cobra
+	if(comida[0] == 58 && comida[1] == 12){
+		comida[0] = 60;
+	}
     cursor(comida[0], comida[1]);
-    printf(Vermelho "%c", 4);
+    printf(Vermelho "*");
 
 }
 
@@ -169,8 +172,8 @@ int main() {
     cursor(37, 5);
     printf("                                              ");
     //Gerar comida
-    desenhacomida();
     desenha();
+    desenhacomida();
     //Passa a direcao inicial que a cobra vai andar
     direcao = 'd';
 
@@ -190,11 +193,11 @@ int main() {
 
             if ((temp == 77) || (temp == 'd') || (temp == 'D')) {
                 temp = 'd';
-            } else if ((temp == 75) || (temp == 'a') || (temp == 'A')) {
+            } else if ((temp == 'a') || (temp == 'A')) {
                 temp = 'a';
-            } else if ((temp == 72) || (temp == 'w') || (temp == 'W')) {
+            } else if ((temp == 'w') || (temp == 'W')) {
                 temp = 'w';
-            } else if ((temp == 80) || (temp == 's') || (temp == 'S')) {
+            } else if ((temp == 's') || (temp == 'S')) {
                 temp = 's';
             }
 
@@ -205,8 +208,7 @@ int main() {
                         ((direcao == 'd') && (temp != 'a')) ||
                         ((direcao == 'a') && (temp != 'd')) ||
                         ((direcao == 'w') && (temp != 's')) ||
-                        ((direcao == 's') && (temp != 'w')))
- {
+                        ((direcao == 's') && (temp != 'w'))){
                     direcao = temp;
                 }
             }
@@ -255,4 +257,3 @@ int main() {
 	
     cursor(0, 25);
 }
-

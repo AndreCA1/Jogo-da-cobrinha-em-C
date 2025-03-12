@@ -2,10 +2,7 @@
 
 Este é um jogo da cobrinha desenvolvido em C para rodar no terminal do Windows. O objetivo é controlar a cobrinha e comer o máximo de "comidas" possível sem bater nas paredes ou em si mesma.
 
-## Captura de Tela
-
-![Demonstração do Jogo](![image](https://github.com/user-attachments/assets/07ec4517-60c1-499b-9ff9-98c488daba8b)
-jogo.png)
+![image](https://github.com/user-attachments/assets/07ec4517-60c1-499b-9ff9-98c488daba8b)
 
 ## Funcionalidades
 - Movimentação da cobrinha com as teclas `W`, `A`, `S`, `D`

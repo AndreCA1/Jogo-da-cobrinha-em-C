@@ -4,7 +4,7 @@ Este é um jogo da cobrinha desenvolvido em C para rodar no terminal do Windows.
 
 ## Captura de Tela
 
-![Demonstração do Jogo](Jogo-da-cobrinha-em-C/jogo.mp4)
+![Demonstração do Jogo](Jogo-da-cobrinha-em-C/jogo.png)
 
 ## Funcionalidades
 - Movimentação da cobrinha com as teclas `W`, `A`, `S`, `D`

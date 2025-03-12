@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>  
-#include <windows.h> // Para fun??o SetConsoleCursorPosition()
-#include <conio.h>   // Para fun??o getch() e kbhit()
-#include <time.h>    // Para fun??o rand()
+#include <windows.h> // Para funcao SetConsoleCursorPosition()
+//Para criacao das funcoes 
+#include <termios.h>   
+#include <unistd.h>
+#include <fcntl.h>
+#include <time.h>    // Para funcao rand()
 
 //Cordenadas onde a cobra nasce
 #define cordenadax 58 
@@ -15,7 +18,7 @@
 #define Default   "\x1b[0m"
 #define Branco "\033[1;37m"
 
-// Vari?veis Globais(podem ser acessadas e alteradas em qualquer parte do c?digo)
+// Variaveis Globais(podem ser acessadas e alteradas em qualquer parte do codigo)
 int tamanhocobra[260][2]; // Linhas mostram qual o peda?o da cobra e colunas a cordenada x e y
 int pontos = 1, cordx = 0, cordy = 0; // Variaveis que vao controlar o local onde a cabeca da cobra esta
 int comida[2]; //Cordenadas da comida gerada
@@ -23,12 +26,48 @@ int velocidade = 200; //Quanto maior, mais devagar(tempo entre cada printf da co
 
 // Criando funcoes
 
+//Funcao _kbhit verifica quando uma tecla e pressionada
+int _kbhit() {
+    struct termios oldt, newt;
+    int ch;
+    int oldf;
+
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+    ch = getchar();
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+    if (ch != EOF) {
+        ungetc(ch, stdin);
+        return 1;
+    }
+
+    return 0;
+}
+//Funcao _getch recebe o a tecla pressionada sem mostrar na tela
+int _getch() {
+    struct termios oldt, newt;
+    int ch;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    return ch;
+}
+
+//Muda a posição do cursor
 void cursor(int x, int y) {
-    // Funcao do windows para acessar o buffer da tela do prompt de comando e verificar onde o cursor esta
-    SetConsoleCursorPosition(
-            GetStdHandle(STD_OUTPUT_HANDLE),
-            // Passa a nova posicao do cursor
-            (COORD){x, y});
+    printf("\033[%d;%dH", y, x);  
+    fflush(stdout);  
 }
 
 // Desenha a cobra
@@ -39,7 +78,8 @@ void desenha() {
         //Os valores 56 e 10 servem para que a cobrinha inicie dentro do retangulo
         cursor(tamanhocobra[i][0] + cordenadax, tamanhocobra[i][1] + cordenaday);
         // O desenho e feito a partir de print da tecla 219 que e um retangulo cobrindo o a cordenada toda
-        printf(Verde "%c", 219);
+        printf(Verde "▓");
+        fflush(stdout);
     }
 }
 
@@ -50,6 +90,8 @@ void atualizaposicao() {
     // Conforme a cobra anda e necessario apagar o desenho onde ela nao existe mais
     // O que e feito com um printf vazio no local onde ela ja passou
     printf(" ");
+    fflush(stdout);
+
     for (int i = pontos; i >= 0; i--) {
         //
         tamanhocobra[i + 1][0] = tamanhocobra[i][0];  
@@ -67,8 +109,8 @@ void desenhacomida() {
 		comida[0] = 60;
 	}
     cursor(comida[0], comida[1]);
-    printf(Vermelho "*");
-
+    printf(Vermelho "★");
+    fflush(stdout);
 }
 
 // Verifica se a cobrinha bateu no proprio corpo
@@ -85,7 +127,8 @@ int Verifica() {
 
 void mostrapontos(int pontos) {
     cursor(85, 12);
-    printf(Branco "Pontos: %d", pontos);
+    printf(Branco "Pontos: %d", pontos - 1);
+    fflush(stdout);
 }
 
 //Verifica se o jogador comeu uma comida
@@ -104,73 +147,98 @@ void comeucomida(int cordx, int cordy){
 
 
 int main() {
-    system("color F");
+    #ifdef _WIN32
+        system("cls");
+        system("color 0F");
+    #else
+        system("clear");
+        printf("\033[0;37;40m");
+    #endif
+
+    printf("\033[?25l"); // Esconde o cursor
+    fflush(stdout);
     
-	int i, perdeu = 0;
+	int i;
+    bool perdeu = false;
     int direcao, temp;
 
     cursor(100, 27);
     printf("By Andre Carvalho");
+    fflush(stdout);
 
     //Desenha o titulo e faz piscar
     for (i = 0; i < 3; i++) {
         //Printa vazio e depois o titulo dando a impressao de piscar
         cursor(49, 2);
-        printf("                         "); 
+        printf("                         ");
+        fflush(stdout);
         Sleep(500);
         cursor(49, 2);
         printf("|||||| SNAKE GAME ||||||");
+        fflush(stdout);
         Sleep(500);
     }
 
+
     //Desenha o retangulo que define as paredes dos jogo
+    
     //Parede de cima
     for (i = 45; i < 75; i++) {
         cursor(i, 7);
-        printf(CinzaEscuro "%c", 219);
+        printf(CinzaEscuro "█");
+        fflush(stdout);
         Sleep(05);
     }
-
 
     //Parede da direita
     for (i = 7; i < 17; i++) {
         cursor(75, i);
-        printf("%c", 219);
+        printf(CinzaEscuro "█");
+        fflush(stdout);
         Sleep(05);
     }
 
     //Parede de baixo
     for (i = 75; i > 45; i--) {
         cursor(i, 17);
-        printf("%c", 219);
+        printf(CinzaEscuro "█");
+        fflush(stdout);
         Sleep(05);
     }
 
     //Parede da esquerda
     for (i = 17; i > 7; i--) {
         cursor(45, i);
-        printf("%c", 219);
+        printf(CinzaEscuro "█");
+        fflush(stdout);
         Sleep(05);
     }
-    //Paredes feitas
+
 
     //tutorial
     cursor(2, 11);
     printf(Branco "Bem vindo ao jogo da cobrinha! Para se\n");
+    fflush(stdout);
     cursor(2, 12);
     printf("mover use W,A,S,D. Tente antingir o\n");
+    fflush(stdout);
     cursor(2, 13);
     printf("maximo de pontos sem bater nas\n");
+    fflush(stdout);
     cursor(2, 14);
     printf("paredes ou em seu proprio corpo");
-    //fim do tutorial
+    fflush(stdout);
+
 
     //Pede qualquer tecla para iniciar
     cursor(38, 5);
     printf("Pressione qualquer tecla para iniciar o jogo!");
-    getch();
+    fflush(stdout);
+    _getch();
+
+    //Posiciona o cursor
     cursor(37, 5);
-    printf("                                              ");
+    
     //Gerar comida
     desenha();
     desenhacomida();
@@ -180,16 +248,22 @@ int main() {
     mostrapontos(pontos);
 
     //Enquanto o jogador nao perder o programa continua a rodar
-    while (perdeu == 0) {
+    while (!perdeu) {
+
+        //Verifica se bateu na parede
+		if(cordx == 17 || cordx == -13 || cordy == 5 ||cordy == -5) break;
+
+        //verifica se bateu no proprio rabo
+        perdeu = Verifica();
+        if(perdeu) break;
 
         //Matriz tamanhocobra recebe o novo valor da cordenada da cabeca
         tamanhocobra[0][0] = cordx;
         tamanhocobra[0][1] = cordy;
 
-        //Funcao kbhit verifica quando uma tecla e pressionada
-        if (kbhit()) {
-            //Funcao getch recebe o a tecla pressionada sem mostrar na tela
-            temp = getch();
+        //Funcao _kbhit verifica quando uma tecla e pressionada
+        if (_kbhit()) {
+            temp = _getch();
 
             if ((temp == 77) || (temp == 'd') || (temp == 'D')) {
                 temp = 'd';
@@ -214,46 +288,43 @@ int main() {
             }
         }
 
-        //Caso o jogador aperta alguma das teclas a seguir a cobrinha ira 
         //Para a direita, caso sua cordenada seja igual a da parede o loop
         //E encerrado e o jogador perde
 
         if (direcao == 'd') {
             cordx++;
-        }
-        if (direcao == 'a') {
+        }else if (direcao == 'a') {
             cordx--;
-        }
-        if (direcao == 'w') {
+        }else if (direcao == 'w') {
             cordy--;
             Sleep(15);
-        }
-        if (direcao == 's') {
+        }else if (direcao == 's') {
             cordy++;
 			Sleep(15);
         }
-        
-		if(cordx == 18 || cordx == -14 || cordy == 6 ||cordy == -6){
-			break;
-		}
 		
         comeucomida(cordx,cordy);
 
-        perdeu = Verifica();
         atualizaposicao();
         desenha();
+        fflush(stdout);
         Sleep(velocidade);
     }
     //Mostra mensagem para o usuario
     
-    if (perdeu == 1){
+    if (perdeu){
         cursor(35,20);
-		printf(Branco "Voce bateu no proprio rabo! Fez o total de %d pontos", pontos);
+		printf(Branco "Voce bateu no proprio rabo! Fez o total de %d pontos", pontos - 1);
+        fflush(stdout);
 	}
     else{
     	cursor(38, 20);
-		printf(Branco"Voce bateu na parede! Fez o total de %d pontos" Default, pontos);
+		printf(Branco"Voce bateu na parede! Fez o total de %d pontos" Default, pontos - 1);
+        fflush(stdout);
 	}
 	
     cursor(0, 25);
+
+    printf("\033[?25h"); // Mostra o cursor de volta
+    fflush(stdout);
 }
